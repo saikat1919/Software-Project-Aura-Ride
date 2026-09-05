@@ -1,0 +1,8 @@
+<resources>
+    <!-- Splash/base theme. Compose supplies the real design system (see ui/theme/Theme.kt);
+         this only sets a no-action-bar shell and the window background. -->
+    <style name="Theme.AuraRide" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@android:color/white</item>
+        <item name="android:statusBarColor">#7B1E52</item>
+    </style>
+</resources>

@@ -1,0 +1,17 @@
+# Aura Ride backend — zero-cost stack. Run on Python 3.11–3.13 (not 3.14 yet).
+Django>=5.0,<6.1          # verified on 6.0; 5.1 LTS also fine
+djangorestframework>=3.15
+djangorestframework-simplejwt>=5.3
+cryptography>=42.0          # ECDSA P-256 signature verification (§17.1) — the graded core
+python-dotenv>=1.0          # load .env for per-developer config
+
+# Face matching (§7.2). Real DeepFace (heavy — TensorFlow). Set DEMO_FAKE_AI=0 to use.
+# Uses the small SFace model (~37MB). NOTE: DeepFace's own weight downloader is flaky
+# here — if a model's weights fail to download, fetch them with curl into
+# ~/.deepface/weights/ (SFace: face_recognition_sface_2021dec.onnx from opencv_zoo).
+deepface>=0.0.100
+tf-keras>=2.21
+opencv-python>=4.8,<5          # DeepFace breaks on OpenCV 5.x (SFace dnn loader)
+#
+# PostgreSQL driver — only if you switch DB_ENGINE=postgres (sqlite is the default):
+#   psycopg[binary]>=3.1

@@ -1,0 +1,31 @@
+# ---- Secrets & data ----
+backend/.env
+*.env
+!*.env.example
+backend/db.sqlite3
+backend/media/            # uploaded selfies / NID / license — PII, never commit
+
+# ---- Python / Django ----
+backend/.venv/
+__pycache__/
+*.py[cod]
+*.log
+backend/staticfiles/
+
+# ---- Android / Gradle ----
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties  # machine-specific SDK path
+*.iml
+android/.cxx/
+
+# ---- IDE / OS ----
+.idea/
+.claude/                  # local Claude Code config
+.DS_Store
+Thumbs.db
+
+# ---- Keystores (if you ever add release signing) ----
+*.jks
+*.keystore
