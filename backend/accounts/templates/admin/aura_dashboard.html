@@ -1,0 +1,107 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block extrastyle %}{{ block.super }}
+  <link rel="stylesheet" href="{% static 'admin/aura_dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="aura-cards">
+  <div class="aura-card {% if stat_pending %}alert{% endif %}">
+    <div class="n">{{ stat_pending }}</div><div class="l">⏳ Pending review</div></div>
+  <div class="aura-card"><div class="n">{{ stat_active }}</div><div class="l">✅ Active users</div></div>
+  <div class="aura-card"><div class="n">{{ stat_drivers }}</div><div class="l">🚗 Drivers</div></div>
+  <div class="aura-card"><div class="n">{{ stat_online }}</div><div class="l">🟢 Online now</div></div>
+  <div class="aura-card"><div class="n">{{ stat_rides_today }}</div><div class="l">📍 Rides today</div></div>
+  <div class="aura-card"><div class="n">{{ stat_completed }}</div><div class="l">🏁 Completed</div></div>
+  <div class="aura-card"><div class="n">৳{{ stat_revenue }}</div><div class="l">💰 Revenue</div></div>
+</div>
+
+<div class="sec-title">
+  <h1>Verification queue</h1>
+  {% if queue %}<span class="pill">{{ stat_pending }} waiting</span>{% endif %}
+</div>
+
+{% if queue %}
+  {% for sub in queue %}
+  <div class="rev {% if sub.name_mismatch or sub.face_match_verdict == 'FAIL' %}flagged{% endif %}">
+    <div class="imgs">
+      <div class="imgcol">
+        {% if sub.selfie_image %}
+          <a href="#img-s{{ sub.pk }}"><img src="{{ sub.selfie_image.url }}" alt="selfie"></a>
+        {% else %}<div class="noimg">no selfie</div>{% endif %}
+        <span>Selfie</span>
+      </div>
+      <div class="imgcol">
+        {% if sub.nid_image_front %}
+          <a href="#img-n{{ sub.pk }}"><img src="{{ sub.nid_image_front.url }}" alt="NID"></a>
+        {% else %}<div class="noimg">no NID</div>{% endif %}
+        <span>NID / License</span>
+      </div>
+    </div>
+
+    <div class="info">
+      <div class="who">{{ sub.user.full_name }}<span class="role">{{ sub.user.role }}</span>
+        {% if sub.is_step_up %}<span class="verdict REVIEW">step-up</span>{% endif %}</div>
+      <div class="muted">{{ sub.user.email }} · {{ sub.user.phone }} · submitted {{ sub.created_at|date:"M j, H:i" }}</div>
+
+      <div style="margin-top:10px">
+        <span class="verdict {{ sub.face_match_verdict }}">FACE {{ sub.face_match_verdict }}</span>
+        {% if sub.face_match_score is not None %}
+          <span class="muted"> &nbsp;score {{ sub.face_match_score }}</span>
+          <div class="bar"><i style="width:{{ sub.score_pct }}%"></i></div>
+        {% endif %}
+      </div>
+
+      <dl class="kv">
+        <dt>Liveness</dt><dd>{% if sub.liveness_passed %}✅ passed{% else %}❌ not passed{% endif %}</dd>
+        <dt>OCR name</dt><dd class="{% if sub.name_mismatch %}bad{% endif %}">{{ sub.ocr_name|default:"—" }}</dd>
+        <dt>NID number</dt><dd>{{ sub.ocr_nid_number|default:"—" }}</dd>
+        <dt>Gender (AI)</dt><dd class="{% if 'Man' in sub.gender_estimate %}bad{% endif %}">{{ sub.gender_estimate|default:"—" }}</dd>
+        {% if sub.ocr_license_number %}<dt>License</dt><dd>{{ sub.ocr_license_number }}</dd>{% endif %}
+      </dl>
+
+      {% if sub.name_mismatch %}<div class="warn">⚠ OCR name doesn’t match the account name — check the ID.</div>{% endif %}
+      {% if sub.flag_list %}<div class="warn">⚠ {{ sub.flag_list|join:", " }}</div>{% endif %}
+    </div>
+
+    <div class="acts">
+      <form method="post" action="{% url 'admin:verify_approve' sub.pk %}"
+            onsubmit="return confirm('Approve {{ sub.user.full_name|escapejs }}? This activates the account and deletes the raw ID images.');">
+        {% csrf_token %}<button class="btn-ok" type="submit">✔ Approve</button>
+      </form>
+      <input form="rej{{ sub.pk }}" type="text" name="reason" placeholder="Reason for rejection">
+      <form id="rej{{ sub.pk }}" method="post" action="{% url 'admin:verify_reject' sub.pk %}"
+            onsubmit="return confirm('Reject {{ sub.user.full_name|escapejs }}?');">
+        {% csrf_token %}<button class="btn-no" type="submit">✖ Reject</button>
+      </form>
+      <a class="view" href="{% url 'admin:accounts_verificationsubmission_change' sub.pk %}">Open full record →</a>
+    </div>
+  </div>
+
+  <!-- lightboxes -->
+  {% if sub.selfie_image %}<div class="lb" id="img-s{{ sub.pk }}"><a class="x" href="#">×</a><img src="{{ sub.selfie_image.url }}"></div>{% endif %}
+  {% if sub.nid_image_front %}<div class="lb" id="img-n{{ sub.pk }}"><a class="x" href="#">×</a><img src="{{ sub.nid_image_front.url }}"></div>{% endif %}
+  {% endfor %}
+{% else %}
+  <div class="aura-empty">🎉 Queue empty — no submissions awaiting review.</div>
+{% endif %}
+
+{% if recent %}
+<div class="sec-title"><h1>Recent decisions</h1></div>
+<table class="recent">
+  <thead><tr><th>User</th><th>Decision</th><th>Reviewer</th><th>Reason</th><th>When</th></tr></thead>
+  <tbody>
+  {% for r in recent %}
+    <tr>
+      <td>{{ r.user.full_name }}</td>
+      <td><span class="verdict {% if r.status == 'APPROVED' %}PASS{% else %}FAIL{% endif %}">{{ r.status }}</span></td>
+      <td>{{ r.reviewed_by|default:"—" }}</td>
+      <td class="muted">{{ r.review_reason|truncatechars:50|default:"—" }}</td>
+      <td class="muted">{{ r.updated_at|date:"M j, H:i" }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+{% endblock %}
